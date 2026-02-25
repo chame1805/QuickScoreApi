@@ -57,10 +57,10 @@ func main() {
     roomHandler := handler.NewRoomHandler(roomUC, hub)
     scoreHandler := handler.NewScoreHandler(scoreUC, hub)
 
-    // ── 7. Router ─────────────────────────────────────────
-   mux := router.Setup(authHandler, roomHandler, scoreHandler, hub)
+        // ── 7. Router ─────────────────────────────────────────
+    mux := router.Setup(authHandler, roomHandler, scoreHandler, hub)
 
-    // IMPORTANTE: CORS envolviendo todo el mux
+    // Envuelve todo el mux en CORS para que funcione desde cualquier frontend
     handlerWithCORS := middleware.CORS(mux)
 
     port := getEnv("PORT", "8080")
