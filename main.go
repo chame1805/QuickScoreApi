@@ -9,6 +9,7 @@ import (
     "apiGolan/src/core"
     infradb "apiGolan/src/infrastructure/db"
     "apiGolan/src/infrastructure/http/handler"
+    "apiGolan/src/infrastructure/http/middleware"
     "apiGolan/src/infrastructure/http/router"
     "apiGolan/src/infrastructure/repository"
     "apiGolan/src/infrastructure/websocket"
@@ -57,13 +58,15 @@ func main() {
     scoreHandler := handler.NewScoreHandler(scoreUC, hub)
 
     // ── 7. Router ─────────────────────────────────────────
-    mux := router.Setup(authHandler, roomHandler, scoreHandler, hub)
+   mux := router.Setup(authHandler, roomHandler, scoreHandler, hub)
+
+    // IMPORTANTE: CORS envolviendo todo el mux
+    handlerWithCORS := middleware.CORS(mux)
 
     port := getEnv("PORT", "8080")
     log.Printf("API corriendo en http://localhost:%s", port)
-    log.Fatal(http.ListenAndServe(":"+port, mux))
+    log.Fatal(http.ListenAndServe(":"+port, handlerWithCORS))
 }
-
 func getEnv(key, def string) string {
     if v := os.Getenv(key); v != "" {
         return v

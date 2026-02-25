@@ -14,24 +14,29 @@ const UserClaimsKey contextKey = "user_claims"
 
 // Auth valida el token JWT del header Authorization: Bearer <token>
 func Auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, `{"error":"token requerido"}`, http.StatusUnauthorized)
-			return
-		}
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Permitir preflight CORS
+        if r.Method == http.MethodOptions {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
 
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		claims, err := jwtutil.Validate(tokenStr)
-		if err != nil {
-			http.Error(w, `{"error":"token inválido o expirado"}`, http.StatusUnauthorized)
-			return
-		}
+        authHeader := r.Header.Get("Authorization")
+        if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+            http.Error(w, `{"error":"token requerido"}`, http.StatusUnauthorized)
+            return
+        }
 
-		// Guardamos los claims en el contexto para que los handlers puedan usarlos
-		ctx := context.WithValue(r.Context(), UserClaimsKey, claims)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+        tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+        claims, err := jwtutil.Validate(tokenStr)
+        if err != nil {
+            http.Error(w, `{"error":"token inválido o expirado"}`, http.StatusUnauthorized)
+            return
+        }
+
+        ctx := context.WithValue(r.Context(), UserClaimsKey, claims)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
 }
 
 // OnlyHost rechaza la petición si el usuario no es host
