@@ -29,3 +29,18 @@ func (uc *ScoreUseCase) AddPoints(input AddPointsInput) error {
 func (uc *ScoreUseCase) GetRanking(code string) ([]domain.RankingEntry, error) {
 	return uc.scoreService.GetRanking(code)
 }
+
+// ResetUserPointsInput es la entrada para resetear puntos de un usuario
+type ResetUserPointsInput struct {
+	RoomCode    string `json:"room_code"`
+	TargetID    int    `json:"target_user_id"`
+	RequesterID int    `json:"-"`
+}
+
+func (uc *ScoreUseCase) ResetUserPoints(input ResetUserPointsInput) error {
+	return uc.scoreService.ResetUserPoints(input.RoomCode, input.RequesterID, input.TargetID)
+}
+
+func (uc *ScoreUseCase) ResetAllPoints(code string, hostID int) error {
+	return uc.scoreService.ResetAllPoints(code, hostID)
+}

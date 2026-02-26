@@ -95,3 +95,35 @@ func (r *ParticipantRepo) FindByRoom(roomID int) ([]domain.Participant, error) {
 	}
 	return participants, nil
 }
+
+// FindByRoomWithUsers devuelve participantes con datos del usuario
+func (r *ParticipantRepo) FindByRoomWithUsers(roomID int) ([]domain.ParticipantWithUser, error) {
+	query := `
+		SELECT u.id, u.name, u.email, p.joined_at
+		FROM participants p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.room_id = ?
+		ORDER BY p.joined_at ASC
+	`
+	rows, err := r.db.Query(query, roomID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []domain.ParticipantWithUser
+	for rows.Next() {
+		var p domain.ParticipantWithUser
+		if err := rows.Scan(&p.UserID, &p.UserName, &p.Email, &p.JoinedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, p)
+	}
+	return result, nil
+}
+
+// Remove expulsa a un participante de la sala
+func (r *ParticipantRepo) Remove(roomID, userID int) error {
+	_, err := r.db.Exec(`DELETE FROM participants WHERE room_id = ? AND user_id = ?`, roomID, userID)
+	return err
+}

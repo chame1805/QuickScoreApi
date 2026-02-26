@@ -1,20 +1,16 @@
-FROM golang:1.25-alpine
-
+# ---------- Build Stage ----------
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
-
-# Instalar dependencias del sistema
 RUN apk add --no-cache git
-
-# Instalar Air para hot reload
-RUN go install github.com/air-verse/air@latest
-
-# Copiar go.mod (y go.sum si existe) para aprovechar cache de capas
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
-
-# Copiar el resto del código
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -o app
 
+# ---------- Run Stage ----------
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/app .
+COPY --from=builder /app/docs ./docs
 EXPOSE 8080
-
-CMD ["air", "-c", ".air.toml"]
+CMD ["./app"]

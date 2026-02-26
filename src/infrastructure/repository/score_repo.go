@@ -79,3 +79,15 @@ func (r *ScoreRepo) GetByRoomAndUser(roomID, userID int) (*domain.Score, error) 
 	}
 	return score, err
 }
+
+// ResetPoints resetea los puntos de un participante específico a 0
+func (r *ScoreRepo) ResetPoints(roomID, userID int) error {
+	_, err := r.db.Exec(`UPDATE scores SET points = 0 WHERE room_id = ? AND user_id = ?`, roomID, userID)
+	return err
+}
+
+// ResetAllPoints resetea los puntos de todos los participantes de una sala
+func (r *ScoreRepo) ResetAllPoints(roomID int) error {
+	_, err := r.db.Exec(`UPDATE scores SET points = 0 WHERE room_id = ?`, roomID)
+	return err
+}

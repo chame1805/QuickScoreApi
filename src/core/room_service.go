@@ -110,6 +110,40 @@ func (s *RoomService) GetRoom(code string) (*domain.Room, error) {
 	return room, nil
 }
 
+// GetParticipants lista los participantes de una sala con sus datos de usuario
+func (s *RoomService) GetParticipants(code string) ([]domain.ParticipantWithUser, error) {
+	room, err := s.roomRepo.FindByCode(code)
+	if err != nil || room == nil {
+		return nil, errors.New("sala no encontrada")
+	}
+	return s.participantRepo.FindByRoomWithUsers(room.ID)
+}
+
+// KickParticipant expulsa a un participante (solo el host puede hacerlo)
+func (s *RoomService) KickParticipant(code string, hostID, targetUserID int) error {
+	room, err := s.roomRepo.FindByCode(code)
+	if err != nil || room == nil {
+		return errors.New("sala no encontrada")
+	}
+	if room.HostID != hostID {
+		return errors.New("solo el host puede expulsar participantes")
+	}
+	if room.HostID == targetUserID {
+		return errors.New("no puedes expulsarte a ti mismo")
+	}
+
+	exists, _ := s.participantRepo.ExistsInRoom(room.ID, targetUserID)
+	if !exists {
+		return errors.New("el usuario no está en esta sala")
+	}
+
+	// Eliminar de participantes y también su score
+	if err := s.participantRepo.Remove(room.ID, targetUserID); err != nil {
+		return err
+	}
+	return s.scoreRepo.ResetPoints(room.ID, targetUserID)
+}
+
 // generateCode genera un código aleatorio de 6 caracteres tipo ABC123
 func generateCode() string {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))

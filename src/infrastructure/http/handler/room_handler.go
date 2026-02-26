@@ -1,6 +1,7 @@
 package handler
 
 import (
+    "encoding/json"
     "net/http"
     "strings"
 
@@ -148,4 +149,82 @@ func extractCode(path, prefix, suffix string) string {
 // helper: obtiene los claims del contexto (puesto por el middleware)
 func getClaims(r *http.Request) *jwtutil.Claims {
     return r.Context().Value(middleware.UserClaimsKey).(*jwtutil.Claims)
+}
+
+// GetParticipants godoc
+// @Summary Listar participantes de una sala
+// @Tags rooms
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Código de sala"
+// @Success 200 {array} domain.ParticipantWithUser
+// @Router /rooms/{code}/participants [get]
+func (h *RoomHandler) GetParticipants(w http.ResponseWriter, r *http.Request) {
+    code := extractCode(r.URL.Path, "/rooms/", "/participants")
+    participants, err := h.uc.GetParticipants(code)
+    if err != nil {
+        jsonError(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    if participants == nil {
+        jsonResponse(w, http.StatusOK, []interface{}{})
+        return
+    }
+    jsonResponse(w, http.StatusOK, participants)
+}
+
+// KickParticipant godoc
+// @Summary Host expulsa a un participante
+// @Tags rooms
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Código de sala"
+// @Param body body map[string]int true "user_id del participante a expulsar"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /rooms/{code}/kick [post]
+func (h *RoomHandler) KickParticipant(w http.ResponseWriter, r *http.Request) {
+    code := extractCode(r.URL.Path, "/rooms/", "/kick")
+    claims := getClaims(r)
+
+    var body struct {
+        UserID int `json:"user_id"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.UserID == 0 {
+        jsonError(w, "user_id requerido", http.StatusBadRequest)
+        return
+    }
+
+    if err := h.uc.KickParticipant(code, claims.UserID, body.UserID); err != nil {
+        jsonError(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    h.hub.Broadcast(code, ws.Message{
+        Event:    "participant_kicked",
+        RoomCode: code,
+        Payload:  map[string]int{"user_id": body.UserID},
+    })
+
+    jsonResponse(w, http.StatusOK, map[string]string{"message": "participante expulsado"})
+}
+// GetOnlineUsers godoc
+// @Summary Ver quién está conectado ahora mismo en la sala (vía WS)
+// @Tags rooms
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Código de sala"
+// @Success 200 {array} ws.ClientInfo
+// @Router /rooms/{code}/online [get]
+func (h *RoomHandler) GetOnlineUsers(hub *ws.Hub) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        code := extractCode(r.URL.Path, "/rooms/", "/online")
+        online := hub.GetOnlineUsers(code)
+        if online == nil {
+            online = []ws.ClientInfo{}
+        }
+        jsonResponse(w, http.StatusOK, online)
+    }
 }

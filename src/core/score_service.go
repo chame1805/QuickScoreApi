@@ -46,3 +46,27 @@ func (s *ScoreService) GetRanking(code string) ([]domain.RankingEntry, error) {
 
 	return s.scoreRepo.GetRanking(room.ID)
 }
+
+// ResetUserPoints resetea los puntos de un participante específico (solo host)
+func (s *ScoreService) ResetUserPoints(code string, hostID, targetUserID int) error {
+	room, err := s.roomRepo.FindByCode(code)
+	if err != nil || room == nil {
+		return errors.New("sala no encontrada")
+	}
+	if room.HostID != hostID {
+		return errors.New("solo el host puede resetear puntos")
+	}
+	return s.scoreRepo.ResetPoints(room.ID, targetUserID)
+}
+
+// ResetAllPoints resetea los puntos de todos en la sala (solo host)
+func (s *ScoreService) ResetAllPoints(code string, hostID int) error {
+	room, err := s.roomRepo.FindByCode(code)
+	if err != nil || room == nil {
+		return errors.New("sala no encontrada")
+	}
+	if room.HostID != hostID {
+		return errors.New("solo el host puede resetear puntos")
+	}
+	return s.scoreRepo.ResetAllPoints(room.ID)
+}

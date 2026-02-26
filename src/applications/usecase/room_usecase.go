@@ -43,3 +43,11 @@ func (uc *RoomUseCase) EndSession(code string, hostID int) error {
 func (uc *RoomUseCase) GetRoom(code string) (*domain.Room, error) {
 	return uc.roomService.GetRoom(code)
 }
+
+func (uc *RoomUseCase) GetParticipants(code string) ([]domain.ParticipantWithUser, error) {
+	return uc.roomService.GetParticipants(code)
+}
+
+func (uc *RoomUseCase) KickParticipant(code string, hostID, targetUserID int) error {
+	return uc.roomService.KickParticipant(code, hostID, targetUserID)
+}

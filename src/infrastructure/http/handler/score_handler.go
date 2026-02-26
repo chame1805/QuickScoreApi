@@ -83,3 +83,71 @@ func (h *ScoreHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 
     jsonResponse(w, http.StatusOK, ranking)
 }
+
+// ResetUserPoints godoc
+// @Summary Host resetea los puntos de un participante específico
+// @Tags scores
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Código de sala"
+// @Param body body usecase.ResetUserPointsInput true "user_id del participante"
+// @Success 200 {object} map[string]string
+// @Router /rooms/{code}/score/reset [post]
+func (h *ScoreHandler) ResetUserPoints(w http.ResponseWriter, r *http.Request) {
+    code := extractCode(r.URL.Path, "/rooms/", "/score/reset")
+    claims := getClaims(r)
+
+    var input usecase.ResetUserPointsInput
+    if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+        jsonError(w, "cuerpo de la petición inválido", http.StatusBadRequest)
+        return
+    }
+    input.RoomCode = code
+    input.RequesterID = claims.UserID
+
+    if err := h.uc.ResetUserPoints(input); err != nil {
+        jsonError(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    ranking, err := h.uc.GetRanking(code)
+    if err == nil {
+        h.hub.Broadcast(code, ws.Message{
+            Event:    "score_update",
+            RoomCode: code,
+            Payload:  ranking,
+        })
+    }
+
+    jsonResponse(w, http.StatusOK, map[string]string{"message": "puntos reseteados"})
+}
+
+// ResetAllPoints godoc
+// @Summary Host resetea los puntos de todos los participantes
+// @Tags scores
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Código de sala"
+// @Success 200 {object} map[string]string
+// @Router /rooms/{code}/score/reset-all [post]
+func (h *ScoreHandler) ResetAllPoints(w http.ResponseWriter, r *http.Request) {
+    code := extractCode(r.URL.Path, "/rooms/", "/score/reset-all")
+    claims := getClaims(r)
+
+    if err := h.uc.ResetAllPoints(code, claims.UserID); err != nil {
+        jsonError(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    ranking, err := h.uc.GetRanking(code)
+    if err == nil {
+        h.hub.Broadcast(code, ws.Message{
+            Event:    "score_update",
+            RoomCode: code,
+            Payload:  ranking,
+        })
+    }
+
+    jsonResponse(w, http.StatusOK, map[string]string{"message": "todos los puntos reseteados"})
+}

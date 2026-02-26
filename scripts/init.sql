@@ -60,3 +60,34 @@ CREATE TABLE IF NOT EXISTS scores (
     CONSTRAINT fk_score_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY uq_score_room_user (room_id, user_id)
 );
+
+-- ------------------------------------------------------------
+-- Tabla: questions
+-- Preguntas lanzadas por el host durante una sesión activa
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS questions (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    room_id        INT NOT NULL,
+    text           TEXT NOT NULL,
+    correct_answer VARCHAR(500) NOT NULL,
+    points         INT NOT NULL DEFAULT 10,
+    status         ENUM('open','closed') NOT NULL DEFAULT 'open',
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_question_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------
+-- Tabla: answers
+-- Respuestas enviadas por los participantes a las preguntas
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS answers (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    user_id     INT NOT NULL,
+    text        VARCHAR(500) NOT NULL,
+    is_correct  BOOLEAN NOT NULL DEFAULT FALSE,
+    answered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_answer_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_answer_question_user (question_id, user_id)  -- un participante solo responde una vez
+);
