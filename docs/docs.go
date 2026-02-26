@@ -223,6 +223,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/rooms/{code}/answer": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Participante envía su respuesta",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Respuesta",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usecase.SubmitAnswerInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/usecase.SubmitAnswerOutput"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/rooms/{code}/end": {
             "patch": {
                 "security": [
@@ -330,6 +384,341 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/kick": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "Host expulsa a un participante",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "user_id del participante a expulsar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/online": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "Ver quién está conectado ahora mismo en la sala (vía WS)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/websocket.ClientInfo"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/participants": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "Listar participantes de una sala",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.ParticipantWithUser"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/questions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Host lanza una pregunta a la sala",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos de la pregunta",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usecase.LaunchQuestionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/usecase.LaunchQuestionOutput"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/questions/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Obtener la pregunta activa de una sala",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/usecase.LaunchQuestionOutput"
+                        }
+                    },
+                    "204": {
+                        "description": "Sin pregunta activa"
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/questions/{question_id}/answers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Host obtiene todas las respuestas de una pregunta",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de pregunta",
+                        "name": "question_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Answer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/questions/{question_id}/close": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Host cierra la pregunta activa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de pregunta",
+                        "name": "question_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -470,6 +859,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/rooms/{code}/score/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scores"
+                ],
+                "summary": "Host resetea los puntos de un participante específico",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "user_id del participante",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usecase.ResetUserPointsInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{code}/score/reset-all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scores"
+                ],
+                "summary": "Host resetea los puntos de todos los participantes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código de sala",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/rooms/{code}/start": {
             "patch": {
                 "security": [
@@ -535,6 +1008,57 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.Answer": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "answered_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_correct": {
+                    "type": "boolean"
+                },
+                "question_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.ParticipantWithUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "joined_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.QuestionStatus": {
+            "type": "string",
+            "enum": [
+                "open",
+                "closed"
+            ],
+            "x-enum-varnames": [
+                "QuestionStatusOpen",
+                "QuestionStatusClosed"
+            ]
+        },
         "domain.Role": {
             "type": "string",
             "enum": [
@@ -558,6 +1082,40 @@ const docTemplate = `{
                 },
                 "target_user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "usecase.LaunchQuestionInput": {
+            "type": "object",
+            "properties": {
+                "correct_answer": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.LaunchQuestionOutput": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "room_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.QuestionStatus"
+                },
+                "text": {
+                    "type": "string"
                 }
             }
         },
@@ -588,6 +1146,56 @@ const docTemplate = `{
                     "$ref": "#/definitions/domain.Role"
                 }
             }
+        },
+        "usecase.ResetUserPointsInput": {
+            "type": "object",
+            "properties": {
+                "room_code": {
+                    "type": "string"
+                },
+                "target_user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.SubmitAnswerInput": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "question_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.SubmitAnswerOutput": {
+            "type": "object",
+            "properties": {
+                "is_correct": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "points_earned": {
+                    "type": "integer"
+                }
+            }
+        },
+        "websocket.ClientInfo": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -602,11 +1210,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "quickscoreapi.duckdns.org:8090",
+	Host:             "quickscoreapi.duckdns.org",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "QuickScore API",
-	Description:      "API de autenticación, salas, ranking y websocket.",
+	Description:      "API de autenticación, salas, ranking, preguntas y websocket.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -1,5 +1,39 @@
 basePath: /
 definitions:
+  domain.Answer:
+    properties:
+      answer:
+        type: string
+      answered_at:
+        type: string
+      id:
+        type: integer
+      is_correct:
+        type: boolean
+      question_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  domain.ParticipantWithUser:
+    properties:
+      email:
+        type: string
+      joined_at:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  domain.QuestionStatus:
+    enum:
+    - open
+    - closed
+    type: string
+    x-enum-varnames:
+    - QuestionStatusOpen
+    - QuestionStatusClosed
   domain.Role:
     enum:
     - host
@@ -17,6 +51,28 @@ definitions:
         type: string
       target_user_id:
         type: integer
+    type: object
+  usecase.LaunchQuestionInput:
+    properties:
+      correct_answer:
+        type: string
+      points:
+        type: integer
+      text:
+        type: string
+    type: object
+  usecase.LaunchQuestionOutput:
+    properties:
+      id:
+        type: integer
+      points:
+        type: integer
+      room_id:
+        type: integer
+      status:
+        $ref: '#/definitions/domain.QuestionStatus'
+      text:
+        type: string
     type: object
   usecase.LoginInput:
     properties:
@@ -36,10 +92,42 @@ definitions:
       role:
         $ref: '#/definitions/domain.Role'
     type: object
-host: quickscoreapi.duckdns.org:8090
+  usecase.ResetUserPointsInput:
+    properties:
+      room_code:
+        type: string
+      target_user_id:
+        type: integer
+    type: object
+  usecase.SubmitAnswerInput:
+    properties:
+      answer:
+        type: string
+      question_id:
+        type: integer
+    type: object
+  usecase.SubmitAnswerOutput:
+    properties:
+      is_correct:
+        type: boolean
+      message:
+        type: string
+      points_earned:
+        type: integer
+    type: object
+  websocket.ClientInfo:
+    properties:
+      name:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: integer
+    type: object
+host: quickscoreapi.duckdns.org
 info:
   contact: {}
-  description: API de autenticación, salas, ranking y websocket.
+  description: API de autenticación, salas, ranking, preguntas y websocket.
   title: QuickScore API
   version: "1.0"
 paths:
@@ -177,6 +265,40 @@ paths:
       summary: Obtener sala por código
       tags:
       - rooms
+  /rooms/{code}/answer:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Respuesta
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/usecase.SubmitAnswerInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/usecase.SubmitAnswerOutput'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Participante envía su respuesta
+      tags:
+      - questions
   /rooms/{code}/end:
     patch:
       parameters:
@@ -251,6 +373,216 @@ paths:
       summary: Unirse a sala
       tags:
       - rooms
+  /rooms/{code}/kick:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: user_id del participante a expulsar
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Host expulsa a un participante
+      tags:
+      - rooms
+  /rooms/{code}/online:
+    get:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/websocket.ClientInfo'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Ver quién está conectado ahora mismo en la sala (vía WS)
+      tags:
+      - rooms
+  /rooms/{code}/participants:
+    get:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ParticipantWithUser'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar participantes de una sala
+      tags:
+      - rooms
+  /rooms/{code}/questions:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Datos de la pregunta
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/usecase.LaunchQuestionInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/usecase.LaunchQuestionOutput'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Host lanza una pregunta a la sala
+      tags:
+      - questions
+  /rooms/{code}/questions/{question_id}/answers:
+    get:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: ID de pregunta
+        in: path
+        name: question_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Answer'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Host obtiene todas las respuestas de una pregunta
+      tags:
+      - questions
+  /rooms/{code}/questions/{question_id}/close:
+    patch:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: ID de pregunta
+        in: path
+        name: question_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Host cierra la pregunta activa
+      tags:
+      - questions
+  /rooms/{code}/questions/current:
+    get:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/usecase.LaunchQuestionOutput'
+        "204":
+          description: Sin pregunta activa
+      security:
+      - BearerAuth: []
+      summary: Obtener la pregunta activa de una sala
+      tags:
+      - questions
   /rooms/{code}/ranking:
     get:
       parameters:
@@ -332,6 +664,58 @@ paths:
       security:
       - BearerAuth: []
       summary: Agregar puntos a participante
+      tags:
+      - scores
+  /rooms/{code}/score/reset:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: user_id del participante
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/usecase.ResetUserPointsInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Host resetea los puntos de un participante específico
+      tags:
+      - scores
+  /rooms/{code}/score/reset-all:
+    post:
+      parameters:
+      - description: Código de sala
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Host resetea los puntos de todos los participantes
       tags:
       - scores
   /rooms/{code}/start:
