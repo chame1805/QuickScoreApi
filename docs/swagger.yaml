@@ -36,7 +36,7 @@ definitions:
       role:
         $ref: '#/definitions/domain.Role'
     type: object
-host: localhost:8090
+host: quickscoreapi.duckdns.org:8090
 info:
   contact: {}
   description: API de autenticación, salas, ranking y websocket.
