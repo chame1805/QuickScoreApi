@@ -1,13 +1,9 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: alessandrau/quickscore-api:latest  # ← reemplaza el build
     container_name: go_api
     ports:
       - "8090:8080"
-    volumes:
-      - .:/app
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
